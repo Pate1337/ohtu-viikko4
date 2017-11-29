@@ -1,22 +1,26 @@
 
 package ohtu.intjoukkosovellus;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class IntJoukko {
 
-    public final static int KAPASITEETTI = 5, // aloitustalukon koko
-                            OLETUSKASVATUS = 5;  // luotava uusi taulukko on 
+//    public final static int KAPASITEETTI = 5, // aloitustalukon koko
+//                            OLETUSKASVATUS = 5;  // luotava uusi taulukko on 
     // näin paljon isompi kuin vanha
-    private int kasvatuskoko;     // Uusi taulukko on tämän verran vanhaa suurempi.
+    private int taulukonKoko;
+    private int kasvatusKoko;     // Uusi taulukko on tämän verran vanhaa suurempi.
     private int[] ljono;      // Joukon luvut säilytetään taulukon alkupäässä. 
     private int alkioidenLkm;    // Tyhjässä joukossa alkioiden_määrä on nolla. 
 
     public IntJoukko() {
-        this(KAPASITEETTI, OLETUSKASVATUS);
+        this(5, 5);
 
     }
 
     public IntJoukko(int kapasiteetti) {
-        this(kapasiteetti, OLETUSKASVATUS);
+        this(kapasiteetti, 5);
 
     }
     
@@ -28,82 +32,102 @@ public class IntJoukko {
         if (kasvatuskoko < 0) {
             throw new IndexOutOfBoundsException("kapasiteetti2");//heitin vaan jotain :D
         }
-        ljono = new int[kapasiteetti];
-        for (int i = 0; i < ljono.length; i++) {
-            ljono[i] = 0;
-        }
+        taulukonKoko = kapasiteetti;
+        ljono = new int[taulukonKoko];
+        //alustus turhaa, automaattisesti kaikki arvot taulukossa 0
         alkioidenLkm = 0;
-        this.kasvatuskoko = kasvatuskoko;
+        this.kasvatusKoko = kasvatuskoko;
     }
 
     public boolean lisaa(int luku) {
 
-        int eiOle = 0;
-        if (alkioidenLkm == 0) {
+        if (taulukkoTyhja()) {
             ljono[0] = luku;
             alkioidenLkm++;
             return true;
-        } else {
         }
-        if (!kuuluu(luku)) {
+        if (!taulukkoSisaltaaLuvun(luku)) {
             ljono[alkioidenLkm] = luku;
             alkioidenLkm++;
-            if (alkioidenLkm % ljono.length == 0) {
-                int[] taulukkoOld = new int[ljono.length];
-                taulukkoOld = ljono;
-                kopioiTaulukko(ljono, taulukkoOld);
-                ljono = new int[alkioidenLkm + kasvatuskoko];
-                kopioiTaulukko(taulukkoOld, ljono);
+            if (taulukkoTaynna()) {
+                kasvataTaulukkoa();
             }
             return true;
         }
         return false;
     }
+    
+    public void kasvataTaulukkoa() {
+        int[] apuTaulukko = ljono.clone();
+        ljono = new int[taulukonKoko + kasvatusKoko];
+        for (int i = 0; i < taulukonKoko; i++) {
+            ljono[i] = apuTaulukko[i];
+        }
+        taulukonKoko = taulukonKoko + kasvatusKoko;
+    }
+    
+    public boolean taulukkoTaynna() {
+        if (alkioidenLkm == taulukonKoko) {
+            return true;
+        }
+        return false;
+    }
+    
+    public boolean taulukkoTyhja() {
+        if (alkioidenLkm == 0) {
+            return true;
+        }
+        return false;
+    }
 
-    public boolean kuuluu(int luku) {
-        int on = 0;
+    public boolean taulukkoSisaltaaLuvun(int luku) {
         for (int i = 0; i < alkioidenLkm; i++) {
             if (luku == ljono[i]) {
-                on++;
+                return true;
             }
         }
-        if (on > 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return false;
     }
 
     public boolean poista(int luku) {
-        int kohta = -1;
-        int apu;
+        if (!taulukkoSisaltaaLuvun(luku)) {
+            return false;
+        }
+        List<Integer> apuLista = poistaLukuListalta(taulukkoListana(), luku);
+        listaTaulukkona(apuLista);
+        for (int i = 0; i < apuLista.size(); i++) {
+            ljono[i] = apuLista.get(i);
+        }
+        alkioidenLkm--;
+        return true;
+    }
+    
+    public void listaTaulukkona(List<Integer> lista) {
+        ljono = new int[taulukonKoko];
+        for (int i = 0; i < lista.size(); i++) {
+            ljono[i] = lista.get(i);
+        }
+    }
+    
+    public List<Integer> taulukkoListana() {
+        List<Integer> apuLista = new ArrayList<>();
         for (int i = 0; i < alkioidenLkm; i++) {
-            if (luku == ljono[i]) {
-                kohta = i; //siis luku löytyy tuosta kohdasta :D
-                ljono[kohta] = 0;
+            apuLista.add(ljono[i]);
+        }
+        return apuLista;
+    }
+    
+    public List<Integer> poistaLukuListalta(List<Integer> lista, int poistettava) {
+        List<Integer> apuLista = lista;
+        for (int i = 0; i < lista.size(); i++) {
+            if (apuLista.get(i) == poistettava) {
+                apuLista.remove(i);
                 break;
             }
         }
-        if (kohta != -1) {
-            for (int j = kohta; j < alkioidenLkm - 1; j++) {
-                apu = ljono[j];
-                ljono[j] = ljono[j + 1];
-                ljono[j + 1] = apu;
-            }
-            alkioidenLkm--;
-            return true;
-        }
-
-
-        return false;
+        return apuLista;
     }
 
-    private void kopioiTaulukko(int[] vanha, int[] uusi) {
-        for (int i = 0; i < vanha.length; i++) {
-            uusi[i] = vanha[i];
-        }
-
-    }
 
     public int mahtavuus() {
         return alkioidenLkm;
